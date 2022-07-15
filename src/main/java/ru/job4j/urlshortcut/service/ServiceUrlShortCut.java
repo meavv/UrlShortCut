@@ -2,21 +2,28 @@ package ru.job4j.urlshortcut.service;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import ru.job4j.urlshortcut.model.ShortUrl;
 import ru.job4j.urlshortcut.model.Site;
+import ru.job4j.urlshortcut.repository.ShortUrlRepository;
 import ru.job4j.urlshortcut.repository.SiteRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class ServiceUrlShortCut {
 
     private final SiteRepository siteRepository;
+    private final ShortUrlRepository shortUrlRepository;
     private BCryptPasswordEncoder encoder;
 
-    public ServiceUrlShortCut(SiteRepository siteRepository, BCryptPasswordEncoder encoder) {
+    public ServiceUrlShortCut(SiteRepository siteRepository,
+                              ShortUrlRepository shortUrlRepository,
+                              BCryptPasswordEncoder encoder) {
         this.siteRepository = siteRepository;
+        this.shortUrlRepository = shortUrlRepository;
         this.encoder = encoder;
     }
 
@@ -43,6 +50,27 @@ public class ServiceUrlShortCut {
 
     public Site findByLogin(String login) {
         return siteRepository.findByLogin(login);
+    }
+
+    public String convert(ShortUrl shortUrl) {
+        var uuid = UUID.randomUUID().toString().split("-")[0];
+        shortUrl.setCode(uuid);
+        shortUrl.setCount(0);
+        shortUrlRepository.save(shortUrl);
+        return uuid;
+    }
+
+    public String redirect(String code) {
+        var shortUrl = shortUrlRepository.findByCode(code);
+        shortUrl.setCount(shortUrl.getCount() + 1);
+        shortUrlRepository.save(shortUrl);
+        return shortUrl.getUrl();
+    }
+
+    public List<ShortUrl> statistic() {
+        List<ShortUrl> list = new ArrayList<>();
+        shortUrlRepository.findAll().forEach(list::add);
+        return list;
     }
 }
 
