@@ -1,8 +1,8 @@
 package ru.job4j.urlshortcut.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.boot.json.JacksonJsonParser;
-import org.springframework.boot.json.JsonParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,15 +11,22 @@ import ru.job4j.urlshortcut.model.ShortUrl;
 import ru.job4j.urlshortcut.model.Site;
 import ru.job4j.urlshortcut.service.ServiceUrlShortCut;
 
-import java.net.http.HttpClient;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 
 @RestController
 public class SiteController {
 
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(SiteController.class.getSimpleName());
+    private final ObjectMapper objectMapper;
     private ServiceUrlShortCut services;
 
-    public SiteController(ServiceUrlShortCut services) {
+    public SiteController(ObjectMapper objectMapper, ServiceUrlShortCut services) {
+        this.objectMapper = objectMapper;
         this.services = services;
     }
 
@@ -59,6 +66,17 @@ public class SiteController {
                 services.statistic(),
                 HttpStatus.OK
         );
+    }
+
+    @ExceptionHandler(value = { NullPointerException.class })
+    public void exceptionHandler(Exception e, HttpServletResponse response) throws IOException {
+        response.setStatus(HttpStatus.BAD_REQUEST.value());
+        response.setContentType("application/json");
+        response.getWriter().write(objectMapper.writeValueAsString(new HashMap<>() { {
+            put("message", e.getMessage());
+            put("type", e.getClass());
+        }}));
+        LOGGER.error(e.getLocalizedMessage());
     }
 
 }
