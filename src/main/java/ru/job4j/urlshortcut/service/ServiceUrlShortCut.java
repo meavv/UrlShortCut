@@ -2,6 +2,7 @@ package ru.job4j.urlshortcut.service;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.job4j.urlshortcut.model.ShortUrl;
 import ru.job4j.urlshortcut.model.Site;
 import ru.job4j.urlshortcut.repository.ShortUrlRepository;
@@ -61,9 +62,8 @@ public class ServiceUrlShortCut {
     }
 
     public String redirect(String code) {
-        var shortUrl = shortUrlRepository.findByCode(code);
-        shortUrl.setCount(shortUrl.getCount() + 1);
-        shortUrlRepository.save(shortUrl);
+        ShortUrl shortUrl = shortUrlRepository.findByCode(code);
+        shortUrlRepository.incrementCount(shortUrl.getId());
         return shortUrl.getUrl();
     }
 
